@@ -28,13 +28,14 @@ def convert(source):
         if element.tag == qn('w:p'):
             title = ' '.join(Paragraph(element, doc).text.split())
             key = folded(title)
+            schedule = key.replace('_', ' ')
             if not title:
                 continue
             if 'lista_de_espera' in key or 'lista de espera' in key:
                 waiting = True
-            elif any(day in key for day in DAYS) and re.search(r'\b\d{1,2}:\d{2}\b', key):
-                day = next(day for day in DAYS if day in key)
-                time = re.search(r'\b(\d{1,2}):(\d{2})\b', key)
+            elif any(day in schedule for day in DAYS) and re.search(r'\b\d{1,2}:\d{2}\b', schedule):
+                day = next(day for day in DAYS if day in schedule)
+                time = re.search(r'\b(\d{1,2}):(\d{2})\b', schedule)
                 hour, minute = int(time.group(1)), int(time.group(2))
                 if hour > 23 or minute > 59:
                     raise ValueError('Invalid group time')
