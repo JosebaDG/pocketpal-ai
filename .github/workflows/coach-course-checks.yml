@@ -1,0 +1,25 @@
+name: Coach Course Checks
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  course-types-and-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+      - name: Install locked dependencies
+        run: yarn install --frozen-lockfile
+      - name: Typecheck
+        run: yarn typecheck
+      - name: Course repository tests
+        if: ${{ !cancelled() && success() }}
+        run: yarn test --coverage=false --runInBand --runTestsByPath src/features/coach/__tests__/CoachCourseRepository.test.ts
