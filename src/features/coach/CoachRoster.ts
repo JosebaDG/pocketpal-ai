@@ -48,30 +48,46 @@ export function parseCoachRoster(json: string): CoachRoster {
   return {schemaVersion: 1, groups, participants};
 }
 
-/** Session-scoped domain state. Not a database; do not use for real records until persistence is added. */
+const requireGroup = (roster: CoachRoster, groupId: string): CoachGroup => {
+  const group = roster.groups.find(item => item.id === groupId);
+  if (!group) throw new Error('Unknown group');
+  return group;
+};
+
+/** Stateless: the caller names the group on every call, so no chat can inherit another chat's selection. */
+export function findEnrolledParticipants(roster: CoachRoster, groupId: string, query: string): CoachParticipant[] {
+  requireGroup(roster, groupId);
+  const needle = normalise(query);
+  if (!needle) return [];
+  return roster.participants.filter(item => item.groupId === groupId &&
+    item.status === 'enrolled' && normalise(item.displayName).includes(needle));
+}
+
+export function draftObservationFor(roster: CoachRoster, groupId: string, participantId: string, observed: string) {
+  requireGroup(roster, groupId);
+  const participant = roster.participants.find(item => item.id === participantId &&
+    item.groupId === groupId && item.status === 'enrolled');
+  if (!participant) throw new Error('Participant not enrolled in selected group');
+  if (!str(observed, 2000)) throw new Error('Invalid observation');
+  return {groupId, participantId, observed: observed.trim(), saved: false as const};
+}
+
+/** Convenience wrapper for callers that do want a session-scoped selection (not used by the Talent). */
 export class CoachRosterSession {
   private selectedGroupId: string | null = null;
   constructor(private readonly roster: CoachRoster) {}
   listGroups(): CoachGroup[] { return [...this.roster.groups]; }
   selectGroup(groupId: string): CoachGroup {
-    const group = this.roster.groups.find(item => item.id === groupId);
-    if (!group) throw new Error('Unknown group');
+    const group = requireGroup(this.roster, groupId);
     this.selectedGroupId = group.id;
     return group;
   }
   findParticipants(query: string): CoachParticipant[] {
     if (!this.selectedGroupId) throw new Error('Choose a group first');
-    const needle = normalise(query);
-    if (!needle) return [];
-    return this.roster.participants.filter(item => item.groupId === this.selectedGroupId &&
-      item.status === 'enrolled' && normalise(item.displayName).includes(needle));
+    return findEnrolledParticipants(this.roster, this.selectedGroupId, query);
   }
   draftObservation(participantId: string, observed: string) {
     if (!this.selectedGroupId) throw new Error('Choose a group first');
-    const participant = this.roster.participants.find(item => item.id === participantId &&
-      item.groupId === this.selectedGroupId && item.status === 'enrolled');
-    if (!participant) throw new Error('Participant not enrolled in selected group');
-    if (!str(observed, 2000)) throw new Error('Invalid observation');
-    return {groupId: this.selectedGroupId, participantId, observed: observed.trim(), saved: false as const};
+    return draftObservationFor(this.roster, this.selectedGroupId, participantId, observed);
   }
 }
