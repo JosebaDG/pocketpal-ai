@@ -10,13 +10,14 @@ describe('real SheetJS integration with synthetic in-memory workbook', () => {
     ];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Lunes 17:00');
+    // Excel sheet names strictly disallow colons: 'Lunes 17-00'
+    XLSX.utils.book_append_sheet(wb, ws, 'Lunes 17-00');
 
     const u8 = XLSX.write(wb, {type: 'buffer', bookType: 'xlsx'}) as Uint8Array;
     const tables = await parseXlsxWorkbook(u8);
 
     expect(tables).toHaveLength(1);
-    expect(tables[0].title).toBe('Lunes 17:00');
+    expect(tables[0].title).toBe('Lunes 17-00');
     expect(tables[0].format).toBe('xlsx');
     expect(tables[0].rows).toHaveLength(3);
     expect(tables[0].rows[1][0]).toEqual({text: 'P01', kind: 'text'});
