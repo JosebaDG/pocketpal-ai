@@ -28,13 +28,18 @@ jobs:
             ${{ runner.os }}-node_modules-
 
       - name: Install dependencies
+        id: install
         run: yarn install --frozen-lockfile
 
       - name: TypeScript type check
+        id: types
         run: yarn typecheck
 
+      # Focused diagnostic only: the full upstream coverage gate is unchanged.
       - name: Coach roster tests
-        run: yarn test --runInBand --runTestsByPath src/features/coach/__tests__/CoachRoster.test.ts src/features/coach/__tests__/CoachRosterStateless.test.ts
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: yarn test --coverage=false --runInBand --runTestsByPath src/features/coach/__tests__/CoachRoster.test.ts src/features/coach/__tests__/CoachRosterStateless.test.ts
 
       - name: Coach Talent tests
-        run: yarn test --runInBand --runTestsByPath src/services/talents/__tests__/SwimAgentEngine.test.ts src/services/talents/__tests__/CoachWorkspaceEngine.test.ts
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: yarn test --coverage=false --runInBand --runTestsByPath src/services/talents/__tests__/SwimAgentEngine.test.ts src/services/talents/__tests__/CoachWorkspaceEngine.test.ts
