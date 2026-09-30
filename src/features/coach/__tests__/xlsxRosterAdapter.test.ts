@@ -2,7 +2,7 @@ import * as XLSX from 'xlsx';
 import {parseXlsxWorkbook} from '../xlsxRosterAdapter';
 
 describe('real SheetJS integration with synthetic in-memory workbook', () => {
-  it('decodes a real generated XLSX workbook into clean course tables', async () => {
+  it('decodes a real generated XLSX workbook into clean course tables', () => {
     const wsData = [
       ['Código', 'Alumno', 'Contacto'],
       ['P01', 'Lía Ejemplo', 'privado@test.local'],
@@ -14,7 +14,7 @@ describe('real SheetJS integration with synthetic in-memory workbook', () => {
     XLSX.utils.book_append_sheet(wb, ws, 'Lunes 17-00');
 
     const u8 = XLSX.write(wb, {type: 'buffer', bookType: 'xlsx'}) as Uint8Array;
-    const tables = await parseXlsxWorkbook(u8);
+    const tables = parseXlsxWorkbook(u8);
 
     expect(tables).toHaveLength(1);
     expect(tables[0].title).toBe('Lunes 17-00');
@@ -24,8 +24,8 @@ describe('real SheetJS integration with synthetic in-memory workbook', () => {
     expect(tables[0].rows[1][1]).toEqual({text: 'Lía Ejemplo', kind: 'text'});
   });
 
-  it('rejects invalid or corrupted binaries safely', async () => {
+  it('rejects invalid or corrupted binaries safely', () => {
     const corrupt = new Uint8Array([1, 2, 3, 4, 5]);
-    await expect(parseXlsxWorkbook(corrupt)).rejects.toThrow();
+    expect(() => parseXlsxWorkbook(corrupt)).toThrow();
   });
 });

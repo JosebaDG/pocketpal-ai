@@ -1,7 +1,7 @@
+import * as XLSX from 'xlsx';
 import type {ImportTable} from './CoachTableImport';
 import {decodeXlsxTables} from './SheetJsRosterDecoder';
 
-export async function parseXlsxWorkbook(bytes: Uint8Array): Promise<ImportTable[]> {
-  const XLSX = await import('xlsx');
+export function parseXlsxWorkbook(bytes: Uint8Array): ImportTable[] {
   return decodeXlsxTables(bytes, XLSX);
 }
