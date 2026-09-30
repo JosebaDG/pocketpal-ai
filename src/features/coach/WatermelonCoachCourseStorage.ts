@@ -20,7 +20,10 @@ function header(raw: string, scope: CourseScope) {
     throw new Error('Course snapshot exceeds storage limit');
   }
   const data = headerSchema.parse(JSON.parse(raw));
-  if (data.workspaceId !== scope.workspaceId || data.courseId !== scope.courseId) {
+  if (
+    data.workspaceId !== scope.workspaceId ||
+    data.courseId !== scope.courseId
+  ) {
     throw new Error('Course scope mismatch');
   }
   return data;
@@ -33,7 +36,10 @@ export class WatermelonCoachCourseStorage implements CoachCourseStorage {
   private async record(scope: CourseScope): Promise<CoachCourse | null> {
     const rows = await this.db
       .get<CoachCourse>('coach_courses')
-      .query(Q.where('workspace_id', scope.workspaceId), Q.where('course_id', scope.courseId))
+      .query(
+        Q.where('workspace_id', scope.workspaceId),
+        Q.where('course_id', scope.courseId),
+      )
       .fetch();
     if (rows.length > 1) {
       throw new Error('Duplicate course records');
@@ -43,7 +49,11 @@ export class WatermelonCoachCourseStorage implements CoachCourseStorage {
 
   private checkRecord(row: CoachCourse, scope: CourseScope) {
     const data = header(row.snapshotJson, scope);
-    if (row.workspaceId !== scope.workspaceId || row.courseId !== scope.courseId || row.revision !== data.revision) {
+    if (
+      row.workspaceId !== scope.workspaceId ||
+      row.courseId !== scope.courseId ||
+      row.revision !== data.revision
+    ) {
       throw new Error('Course record metadata mismatch');
     }
     return data;
@@ -69,23 +79,27 @@ export class WatermelonCoachCourseStorage implements CoachCourseStorage {
         if (incoming.revision === 0 || row.revision !== incoming.revision - 1) {
           throw new Error('Course revision conflict: reload and review');
         }
-        await this.db.batch(row.prepareUpdate(record => {
-          record.snapshotJson = snapshot;
-          record.revision = incoming.revision;
-          record.updatedAt = Date.now();
-        }));
+        await this.db.batch(
+          row.prepareUpdate(record => {
+            record.snapshotJson = snapshot;
+            record.revision = incoming.revision;
+            record.updatedAt = Date.now();
+          }),
+        );
       } else {
         if (incoming.revision !== 0) {
           throw new Error('Course missing during update');
         }
-        await this.db.batch(this.db.get<CoachCourse>('coach_courses').prepareCreate(record => {
-          record.workspaceId = scope.workspaceId;
-          record.courseId = scope.courseId;
-          record.snapshotJson = snapshot;
-          record.revision = 0;
-          record.createdAt = Date.now();
-          record.updatedAt = record.createdAt;
-        }));
+        await this.db.batch(
+          this.db.get<CoachCourse>('coach_courses').prepareCreate(record => {
+            record.workspaceId = scope.workspaceId;
+            record.courseId = scope.courseId;
+            record.snapshotJson = snapshot;
+            record.revision = 0;
+            record.createdAt = Date.now();
+            record.updatedAt = record.createdAt;
+          }),
+        );
       }
     });
   }
@@ -94,5 +108,8 @@ export class WatermelonCoachCourseStorage implements CoachCourseStorage {
 /** Lazy native entry point, preserving the existing database singleton. */
 export async function openLocalCoachCourseRepository(scope: CourseScope) {
   const {database} = await import('../../database');
-  return new CoachCourseRepository(scope, new WatermelonCoachCourseStorage(database));
+  return new CoachCourseRepository(
+    scope,
+    new WatermelonCoachCourseStorage(database),
+  );
 }

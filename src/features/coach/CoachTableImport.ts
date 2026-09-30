@@ -4,27 +4,33 @@ import {parseCoachRoster} from './CoachRoster';
 import type {CoachGroup, CoachRoster, CoachParticipant} from './CoachRoster';
 import type {CoachCourseRepository} from './CoachCourseRepository';
 
-const cellSchema = z.object({
-  text: z.string().max(2000),
-  kind: z.enum(['text', 'number', 'formula', 'unsupported']),
-}).strict();
-const tableSchema = z.object({
-  id: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/),
-  title: z.string().max(200),
-  format: z.enum(['docx', 'xlsx']),
-  sourceFirstRow: z.number().int().nonnegative(),
-  sourceFirstColumn: z.number().int().nonnegative(),
-  rows: z.array(z.array(cellSchema).max(100)).max(10000),
-}).strict();
-const selectionSchema = z.object({
-  tableId: z.string(),
-  fromRow: z.number().int().nonnegative(),
-  toRow: z.number().int().nonnegative(),
-  idColumn: z.number().int().nonnegative().max(99),
-  nameColumn: z.number().int().nonnegative().max(99),
-  groupId: z.string(),
-  status: z.enum(['enrolled', 'waiting']),
-}).strict();
+const cellSchema = z
+  .object({
+    text: z.string().max(2000),
+    kind: z.enum(['text', 'number', 'formula', 'unsupported']),
+  })
+  .strict();
+const tableSchema = z
+  .object({
+    id: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/),
+    title: z.string().max(200),
+    format: z.enum(['docx', 'xlsx']),
+    sourceFirstRow: z.number().int().nonnegative(),
+    sourceFirstColumn: z.number().int().nonnegative(),
+    rows: z.array(z.array(cellSchema).max(100)).max(10000),
+  })
+  .strict();
+const selectionSchema = z
+  .object({
+    tableId: z.string(),
+    fromRow: z.number().int().nonnegative(),
+    toRow: z.number().int().nonnegative(),
+    idColumn: z.number().int().nonnegative().max(99),
+    nameColumn: z.number().int().nonnegative().max(99),
+    groupId: z.string(),
+    status: z.enum(['enrolled', 'waiting']),
+  })
+  .strict();
 
 export type ImportCell = z.infer<typeof cellSchema>;
 export type ImportTable = z.infer<typeof tableSchema>;
@@ -44,7 +50,9 @@ export function prepareTableImport(
 ): ImportPreview {
   const tables = z.array(tableSchema).min(1).max(20).parse(input);
   const selections = z.array(selectionSchema).min(1).max(100).parse(choices);
-  const base = parseCoachRoster(JSON.stringify({schemaVersion: 1, groups, participants: []}));
+  const base = parseCoachRoster(
+    JSON.stringify({schemaVersion: 1, groups, participants: []}),
+  );
   if (new Set(tables.map(table => table.id)).size !== tables.length) {
     throw new Error('Repeated source table ID');
   }
@@ -52,10 +60,18 @@ export function prepareTableImport(
   const participants: CoachParticipant[] = [];
   const seenRows = new Set<string>();
   const seenPeople = new Map<string, string>();
-  const issue = (tableId: string, rowNumber: number, code: string) => {issues.push({tableId, rowNumber, code});};
+  const issue = (tableId: string, rowNumber: number, code: string) => {
+    issues.push({tableId, rowNumber, code});
+  };
   for (const selection of selections) {
     const table = tables.find(item => item.id === selection.tableId);
-    if (!table || selection.fromRow > selection.toRow || selection.toRow >= table.rows.length || selection.idColumn === selection.nameColumn || !base.groups.some(group => group.id === selection.groupId)) {
+    if (
+      !table ||
+      selection.fromRow > selection.toRow ||
+      selection.toRow >= table.rows.length ||
+      selection.idColumn === selection.nameColumn ||
+      !base.groups.some(group => group.id === selection.groupId)
+    ) {
       throw new Error('Invalid table mapping');
     }
     for (let index = selection.fromRow; index <= selection.toRow; index += 1) {
@@ -82,17 +98,32 @@ export function prepareTableImport(
       }
       const id = code.text.trim();
       const displayName = name.text.trim();
-      if (!/^[a-zA-Z0-9_-]{1,64}$/.test(id) || !displayName || displayName.length > 120) {
+      if (
+        !/^[a-zA-Z0-9_-]{1,64}$/.test(id) ||
+        !displayName ||
+        displayName.length > 120
+      ) {
         issue(table.id, rowNumber, 'INVALID_ID_OR_NAME');
         continue;
       }
       const previousGroup = seenPeople.get(id);
       if (previousGroup !== undefined) {
-        issue(table.id, rowNumber, previousGroup === selection.groupId ? 'DUPLICATE_PARTICIPANT' : 'MULTIPLE_ACTIVE_GROUPS');
+        issue(
+          table.id,
+          rowNumber,
+          previousGroup === selection.groupId
+            ? 'DUPLICATE_PARTICIPANT'
+            : 'MULTIPLE_ACTIVE_GROUPS',
+        );
         continue;
       }
       seenPeople.set(id, selection.groupId);
-      participants.push({id, displayName, groupId: selection.groupId, status: selection.status});
+      participants.push({
+        id,
+        displayName,
+        groupId: selection.groupId,
+        status: selection.status,
+      });
       if (participants.length > 10000) {
         throw new Error('Import contains too many participants');
       }
@@ -106,8 +137,13 @@ export function prepareTableImport(
     roster = parseCoachRoster(JSON.stringify({...base, participants}));
   }
   return {
-    roster, issues,
-    counts: {groups: base.groups.length, enrolled: participants.filter(p => p.status === 'enrolled').length, waiting: participants.filter(p => p.status === 'waiting').length},
+    roster,
+    issues,
+    counts: {
+      groups: base.groups.length,
+      enrolled: participants.filter(p => p.status === 'enrolled').length,
+      waiting: participants.filter(p => p.status === 'waiting').length,
+    },
   };
 }
 
@@ -118,7 +154,11 @@ export class CoachTableImportSession {
 
   constructor(private readonly repository: CoachCourseRepository) {}
 
-  prepare(tables: ImportTable[], groups: CoachGroup[], selections: TableSelection[]) {
+  prepare(
+    tables: ImportTable[],
+    groups: CoachGroup[],
+    selections: TableSelection[],
+  ) {
     if (this.busy) {
       throw new Error('Import write in progress');
     }
