@@ -20,6 +20,6 @@ jobs:
         run: yarn install --frozen-lockfile
       - name: Typecheck
         run: yarn typecheck
-      - name: Course repository tests
+      - name: Course and storage tests
         if: ${{ !cancelled() && success() }}
-        run: yarn test --coverage=false --runInBand --runTestsByPath src/features/coach/__tests__/CoachCourseRepository.test.ts
+        run: yarn test --coverage=false --runInBand --runTestsByPath src/features/coach/__tests__/CoachCourseRepository.test.ts src/features/coach/__tests__/WatermelonCoachCourseStorage.test.ts src/database/__tests__/schema.test.ts src/database/__tests__/coachCourseSchema.test.ts

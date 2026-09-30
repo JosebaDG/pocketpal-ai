@@ -2,6 +2,7 @@ import {Database} from '@nozbe/watermelondb';
 import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
 import schema from './schema';
 import migrations from './migrations';
+import CoachCourse from './models/CoachCourse';
 import {
   ChatSession,
   Message,
@@ -26,6 +27,7 @@ const adapter = new SQLiteAdapter({
 export const database = new Database({
   adapter,
   modelClasses: [
+    CoachCourse,
     ChatSession,
     Message,
     CompletionSetting,
@@ -38,6 +40,7 @@ export const database = new Database({
 });
 
 export {
+  CoachCourse,
   ChatSession,
   Message,
   CompletionSetting,
