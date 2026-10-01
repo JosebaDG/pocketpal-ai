@@ -22,4 +22,4 @@ jobs:
         run: yarn typecheck
       - name: Course storage and import tests
         if: ${{ !cancelled() && success() }}
-        run: yarn test --coverage=false --runInBand --runTestsByPath src/features/coach/__tests__/CoachCourseRepository.test.ts src/features/coach/__tests__/WatermelonCoachCourseStorage.test.ts src/features/coach/__tests__/CoachTableImport.test.ts src/features/coach/__tests__/SheetJsRosterDecoder.test.ts src/features/coach/__tests__/xlsxRosterAdapter.test.ts src/database/__tests__/schema.test.ts src/database/__tests__/coachCourseSchema.test.ts
+        run: yarn test --coverage=false --runInBand --runTestsByPath src/features/coach/__tests__/CoachCourseRepository.test.ts src/features/coach/__tests__/WatermelonCoachCourseStorage.test.ts src/features/coach/__tests__/CoachTableImport.test.ts src/features/coach/__tests__/SheetJsRosterDecoder.test.ts src/features/coach/__tests__/xlsxRosterAdapter.test.ts src/features/coach/__tests__/base64Bytes.test.ts src/features/coach/__tests__/coachSpreadsheetFile.test.ts src/database/__tests__/schema.test.ts src/database/__tests__/coachCourseSchema.test.ts
