@@ -1,6 +1,7 @@
 import {RenderHtmlEngine} from './RenderHtmlEngine';
 import {CalculateEngine} from './CalculateEngine';
 import {DatetimeEngine} from './DatetimeEngine';
+import {CoachCourseEngine} from './CoachCourseEngine';
 import {WebSearchEngine} from './WebSearchEngine';
 import {ReadUrlEngine} from './ReadUrlEngine';
 import {talentRegistry} from './TalentRegistry';
@@ -59,6 +60,7 @@ export function registerDefaultTalents(): void {
   talentRegistry.register(new RenderHtmlEngine());
   talentRegistry.register(new CalculateEngine());
   talentRegistry.register(new DatetimeEngine());
+  talentRegistry.register(new CoachCourseEngine());
   const searchAccess = createSearchAccess();
   talentRegistry.register(new WebSearchEngine(searchAccess));
   talentRegistry.register(new ReadUrlEngine(searchAccess));

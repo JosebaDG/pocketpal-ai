@@ -1,0 +1,25 @@
+name: Coach Course Checks
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  course-types-and-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+      - name: Install locked dependencies
+        run: yarn install --frozen-lockfile
+      - name: Typecheck
+        run: yarn typecheck
+      - name: Course storage and import tests
+        if: ${{ !cancelled() && success() }}
+        run: yarn test --coverage=false --runInBand --runTestsByPath src/features/coach/__tests__/CoachCourseRepository.test.ts src/features/coach/__tests__/CoachSchedule.test.ts src/features/coach/__tests__/CoachDomain.test.ts src/features/coach/__tests__/CoachCourseAdmin.test.ts src/features/coach/__tests__/WatermelonCoachCourseStorage.test.ts src/features/coach/__tests__/CoachTableImport.test.ts src/features/coach/__tests__/SheetJsRosterDecoder.test.ts src/features/coach/__tests__/xlsxRosterAdapter.test.ts src/features/coach/__tests__/base64Bytes.test.ts src/features/coach/__tests__/coachSpreadsheetFile.test.ts src/services/talents/__tests__/CoachCourseEngine.test.ts src/database/__tests__/schema.test.ts src/database/__tests__/coachCourseSchema.test.ts
