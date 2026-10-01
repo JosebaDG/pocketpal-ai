@@ -30,11 +30,36 @@ const roster = () =>
         group('nolevel', 'jueves', '17:00'),
       ],
       participants: [
-        {id: 'p1', groupId: 'w1', displayName: 'Persona Demo', status: 'enrolled'},
-        {id: 'p2', groupId: 'w2', displayName: 'Persona Otra', status: 'enrolled'},
-        {id: 'p3', groupId: 'w3', displayName: 'Tercera Demo', status: 'enrolled'},
-        {id: 'p4', groupId: 'm1', displayName: 'Persona Lunes', status: 'enrolled'},
-        {id: 'p5', groupId: 'w1', displayName: 'Espera Demo', status: 'waiting'},
+        {
+          id: 'p1',
+          groupId: 'w1',
+          displayName: 'Persona Demo',
+          status: 'enrolled',
+        },
+        {
+          id: 'p2',
+          groupId: 'w2',
+          displayName: 'Persona Otra',
+          status: 'enrolled',
+        },
+        {
+          id: 'p3',
+          groupId: 'w3',
+          displayName: 'Tercera Demo',
+          status: 'enrolled',
+        },
+        {
+          id: 'p4',
+          groupId: 'm1',
+          displayName: 'Persona Lunes',
+          status: 'enrolled',
+        },
+        {
+          id: 'p5',
+          groupId: 'w1',
+          displayName: 'Espera Demo',
+          status: 'waiting',
+        },
       ],
     }),
   );
@@ -143,7 +168,10 @@ describe('coach_course: choosing and finding', () => {
   it('flags several matches and narrows by group when asked', async () => {
     const {engineAt, run} = await setup();
     const engine = engineAt(at(17, 10));
-    const all = await run(engine, {action: 'find_participants', query: 'persona'});
+    const all = await run(engine, {
+      action: 'find_participants',
+      query: 'persona',
+    });
     expect(all.data.ambiguous).toBe(true);
     expect(all.data.matches).toHaveLength(3);
     const one = await run(engine, {
@@ -264,9 +292,9 @@ describe('coach_course: history and review', () => {
       'Antes',
     ]);
     expect(student.data.transfers).toHaveLength(1);
-    expect(
-      student.data.groupEvents.map((e: {kind: string}) => e.kind),
-    ).toEqual(['left', 'joined']);
+    expect(student.data.groupEvents.map((e: {kind: string}) => e.kind)).toEqual(
+      ['left', 'joined'],
+    );
     const origin = await run(engine, {action: 'group_history', groupId: 'w1'});
     expect(origin.data.studentNotes).toHaveLength(1);
     expect(origin.data.events[0].kind).toBe('left');
@@ -275,15 +303,26 @@ describe('coach_course: history and review', () => {
   it('drafts a review flag and lists what is pending', async () => {
     const {repo, engineAt, run} = await setup();
     const engine = engineAt(at(17, 10));
-    const written = await repo.appendGroupNoteConfirmed('w1', 'Interesante', iso, WED);
+    const written = await repo.appendGroupNoteConfirmed(
+      'w1',
+      'Interesante',
+      iso,
+      WED,
+    );
     const noteId = written.groupNotes[0].id;
     const draft = await run(engine, {
       action: 'draft_review_flag',
       noteId,
       reason: 'Repasar',
     });
-    expect(draft.data).toMatchObject({status: 'DRAFT_NOT_SAVED', noteId, reason: 'Repasar'});
-    expect((await run(engine, {action: 'pending_reviews'})).data.pending).toEqual([]);
+    expect(draft.data).toMatchObject({
+      status: 'DRAFT_NOT_SAVED',
+      noteId,
+      reason: 'Repasar',
+    });
+    expect(
+      (await run(engine, {action: 'pending_reviews'})).data.pending,
+    ).toEqual([]);
     await repo.flagForReviewConfirmed(noteId, iso, 'Repasar');
     const pending = await run(engine, {action: 'pending_reviews'});
     expect(pending.data.pending[0]).toMatchObject({noteId, reason: 'Repasar'});
@@ -291,7 +330,8 @@ describe('coach_course: history and review', () => {
       (await run(engine, {action: 'draft_review_flag', noteId})).result.type,
     ).toBe('error');
     expect(
-      (await run(engine, {action: 'draft_review_flag', noteId: 'missing'})).result.type,
+      (await run(engine, {action: 'draft_review_flag', noteId: 'missing'}))
+        .result.type,
     ).toBe('error');
   });
 });

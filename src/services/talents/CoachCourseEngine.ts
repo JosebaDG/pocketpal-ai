@@ -55,7 +55,9 @@ function validDate(value: string): boolean {
     return false;
   }
   const time = Date.parse(`${value}T00:00:00Z`);
-  return !Number.isNaN(time) && new Date(time).toISOString().slice(0, 10) === value;
+  return (
+    !Number.isNaN(time) && new Date(time).toISOString().slice(0, 10) === value
+  );
 }
 
 function lastOccurrence(today: string, weekday: number): string {
@@ -259,7 +261,11 @@ function draftNote(snap: CourseSnapshot, now: Date, args: Record<string, any>) {
     throw new Error('Text too long');
   }
   const {clock, targets} = suggestion(snap, now);
-  const {sessionDate, source} = resolveSessionDate(group, args.sessionDate, clock.date);
+  const {sessionDate, source} = resolveSessionDate(
+    group,
+    args.sessionDate,
+    clock.date,
+  );
   let participant;
   if (kind === 'student') {
     const participantId = required(args.participantId, 'participantId');
