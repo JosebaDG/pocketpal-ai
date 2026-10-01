@@ -26,7 +26,12 @@ const roster = () =>
         },
       ],
       participants: [
-        {id: 'p1', groupId: 'a', displayName: 'Persona Demo', status: 'enrolled'},
+        {
+          id: 'p1',
+          groupId: 'a',
+          displayName: 'Persona Demo',
+          status: 'enrolled',
+        },
       ],
     }),
   );
@@ -88,8 +93,9 @@ function fakeDatabase() {
         rows.filter(row =>
           clauses.every(
             clause =>
-              (clause.column === 'workspace_id' ? row.workspaceId : row.courseId) ===
-              clause.value,
+              (clause.column === 'workspace_id'
+                ? row.workspaceId
+                : row.courseId) === clause.value,
           ),
         ),
     }),
