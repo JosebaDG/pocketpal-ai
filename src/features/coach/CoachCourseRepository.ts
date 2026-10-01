@@ -75,10 +75,9 @@ const snapshotSchema = scopeSchema
   .strict();
 
 export type CourseScope = z.infer<typeof scopeSchema>;
-export type CourseSnapshot = Omit<
-  z.infer<typeof snapshotSchema>,
-  'roster'
-> & {roster: CoachRoster};
+export type CourseSnapshot = Omit<z.infer<typeof snapshotSchema>, 'roster'> & {
+  roster: CoachRoster;
+};
 
 /** Trusted storage port. Production needs a protected, transactional adapter. */
 export interface CoachCourseStorage {
@@ -323,7 +322,10 @@ export class CoachCourseRepository {
       const person = data.roster.participants.find(
         item => item.id === participantId,
       );
-      if (!person || !data.roster.groups.some(group => group.id === toGroupId)) {
+      if (
+        !person ||
+        !data.roster.groups.some(group => group.id === toGroupId)
+      ) {
         throw new Error('Unknown participant or destination group');
       }
       const transfer = transferSchema.parse({

@@ -34,8 +34,18 @@ const roster = () =>
         },
       ],
       participants: [
-        {id: 'p1', groupId: 'mon', displayName: 'Persona Demo', status: 'enrolled'},
-        {id: 'p2', groupId: 'wed', displayName: 'Persona Otra', status: 'enrolled'},
+        {
+          id: 'p1',
+          groupId: 'mon',
+          displayName: 'Persona Demo',
+          status: 'enrolled',
+        },
+        {
+          id: 'p2',
+          groupId: 'wed',
+          displayName: 'Persona Otra',
+          status: 'enrolled',
+        },
       ],
     }),
   );
@@ -96,10 +106,21 @@ describe('course domain: levels, sessions, events and review', () => {
     );
     expect(snap.groupNotes[0].sessionDate).toBe(MONDAY);
     await expect(
-      repo.appendGroupNoteConfirmed('mon', 'Fecha equivocada', wednesday, WEDNESDAY),
+      repo.appendGroupNoteConfirmed(
+        'mon',
+        'Fecha equivocada',
+        wednesday,
+        WEDNESDAY,
+      ),
     ).rejects.toThrow('weekday');
     await expect(
-      repo.appendStudentNoteConfirmed('p1', 'mon', 'Fecha imposible', wednesday, '2026-02-31'),
+      repo.appendStudentNoteConfirmed(
+        'p1',
+        'mon',
+        'Fecha imposible',
+        wednesday,
+        '2026-02-31',
+      ),
     ).rejects.toThrow();
     expect((await repo.snapshot()).groupNotes).toHaveLength(1);
   });
@@ -149,20 +170,31 @@ describe('course domain: levels, sessions, events and review', () => {
     const after = await repo.snapshot();
     expect(pendingReviews(after)).toEqual([]);
     expect(after.reviewEvents).toHaveLength(2);
-    await expect(repo.resolveReviewConfirmed(noteId, wednesday)).rejects.toThrow(
-      'not pending',
-    );
-    await expect(repo.flagForReviewConfirmed('missing', monday)).rejects.toThrow(
-      'Unknown note',
-    );
+    await expect(
+      repo.resolveReviewConfirmed(noteId, wednesday),
+    ).rejects.toThrow('not pending');
+    await expect(
+      repo.flagForReviewConfirmed('missing', monday),
+    ).rejects.toThrow('Unknown note');
   });
 
   it('answers history queries: the student keeps theirs, the group keeps its own', async () => {
     const {repo} = await course();
     await repo.appendGroupNoteConfirmed('mon', 'Nota grupal', monday, MONDAY);
     await repo.appendStudentNoteConfirmed('p1', 'mon', 'Antes', monday, MONDAY);
-    await repo.transferConfirmed('p1', 'wed', wednesday, 'Cambio autorizado demo');
-    await repo.appendStudentNoteConfirmed('p1', 'wed', 'Después', wednesday, WEDNESDAY);
+    await repo.transferConfirmed(
+      'p1',
+      'wed',
+      wednesday,
+      'Cambio autorizado demo',
+    );
+    await repo.appendStudentNoteConfirmed(
+      'p1',
+      'wed',
+      'Después',
+      wednesday,
+      WEDNESDAY,
+    );
     const snap = await repo.snapshot();
     const student = studentHistory(snap, 'p1');
     expect(student.notes.map(n => [n.groupId, n.text])).toEqual([
@@ -173,7 +205,9 @@ describe('course domain: levels, sessions, events and review', () => {
     const origin = groupHistory(snap, 'mon');
     expect(origin.groupNotes.map(n => n.text)).toEqual(['Nota grupal']);
     expect(origin.events.map(e => e.kind)).toEqual(['left']);
-    expect(groupHistory(snap, 'wed').events.map(e => e.kind)).toEqual(['joined']);
+    expect(groupHistory(snap, 'wed').events.map(e => e.kind)).toEqual([
+      'joined',
+    ]);
     expect(() => studentHistory(snap, 'nope')).toThrow('Unknown participant');
   });
 

@@ -1,6 +1,8 @@
 import type {CourseSnapshot} from './CoachCourseRepository';
 
-type AnyNote = CourseSnapshot['studentNotes'][number] | CourseSnapshot['groupNotes'][number];
+type AnyNote =
+  | CourseSnapshot['studentNotes'][number]
+  | CourseSnapshot['groupNotes'][number];
 
 const fold = (value: string) =>
   value
@@ -18,12 +20,15 @@ export function pendingReviews(snapshot: CourseSnapshot) {
   for (const event of snapshot.reviewEvents) {
     latest.set(event.noteId, event);
   }
-  const result: {note: AnyNote; kind: 'student' | 'group'; reason?: string}[] = [];
+  const result: {note: AnyNote; kind: 'student' | 'group'; reason?: string}[] =
+    [];
   for (const event of latest.values()) {
     if (event.action !== 'flag') {
       continue;
     }
-    const student = snapshot.studentNotes.find(note => note.id === event.noteId);
+    const student = snapshot.studentNotes.find(
+      note => note.id === event.noteId,
+    );
     const group = snapshot.groupNotes.find(note => note.id === event.noteId);
     if (student) {
       result.push({note: student, kind: 'student', reason: event.reason});
@@ -35,7 +40,10 @@ export function pendingReviews(snapshot: CourseSnapshot) {
 }
 
 /** The whole individual history: it follows the student across groups. */
-export function studentHistory(snapshot: CourseSnapshot, participantId: string) {
+export function studentHistory(
+  snapshot: CourseSnapshot,
+  participantId: string,
+) {
   const participant = snapshot.roster.participants.find(
     person => person.id === participantId,
   );
@@ -45,7 +53,9 @@ export function studentHistory(snapshot: CourseSnapshot, participantId: string) 
   return {
     participant,
     notes: byTime(
-      snapshot.studentNotes.filter(note => note.participantId === participantId),
+      snapshot.studentNotes.filter(
+        note => note.participantId === participantId,
+      ),
     ),
     transfers: byTime(
       snapshot.transfers.filter(item => item.participantId === participantId),
@@ -64,11 +74,15 @@ export function groupHistory(snapshot: CourseSnapshot, groupId: string) {
   }
   return {
     group,
-    groupNotes: byTime(snapshot.groupNotes.filter(note => note.groupId === groupId)),
+    groupNotes: byTime(
+      snapshot.groupNotes.filter(note => note.groupId === groupId),
+    ),
     studentNotes: byTime(
       snapshot.studentNotes.filter(note => note.groupId === groupId),
     ),
-    events: byTime(snapshot.groupEvents.filter(item => item.groupId === groupId)),
+    events: byTime(
+      snapshot.groupEvents.filter(item => item.groupId === groupId),
+    ),
   };
 }
 
