@@ -1,5 +1,7 @@
 # Swim Agent — rama experimental
 
+> **Para probar el MVP 1 en tu iPhone:** [INSTALAR-POR-CABLE.md](INSTALAR-POR-CABLE.md). La pantalla «Coach (prueba)» cierra el ciclo con un curso ficticio, sin chat ni modelo. Lo de abajo es la historia de los primeros Talents.
+
 Dos Talents reales para PocketPal: `swim_groups` consulta grupos y alumnos por ID; `swim_note_draft` genera borradores verificados contra el grupo y **no escribe**. Los datos del código son sintéticos. No hay teléfonos, listas reales ni almacenamiento de fichas.
 
 ## Activación en el fork

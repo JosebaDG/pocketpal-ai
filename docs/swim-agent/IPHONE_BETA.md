@@ -1,5 +1,7 @@
 # Beta en tu iPhone: ruta honesta y reproducible
 
+> **Desde el 21/10/2026 la ruta vigente es [INSTALAR-POR-CABLE.md](INSTALAR-POR-CABLE.md)**: pantalla «Coach (prueba)», curso ficticio persistente y pasos para Xcode por cable. Este documento describe la beta anterior, solo por chat, y se conserva como historia.
+
 ## Estado actual
 
 Esta rama incluye un Talent `coach_workspace` con demostración sintética y un importador JSON mediante el selector de archivos que PocketPal ya usa. El fichero se valida en el dispositivo y el listado queda **solo en memoria de la instancia del Talent**. No existe aún base de datos de cursillos, evaluación histórica, botón propio de grabación ni importación directa de DOCX. Un chat con nombres puede quedar en el historial local de PocketPal. Antes de usar datos de menores, valida medidas y autorización con la instalación. No pegues el DOCX con teléfonos en el chat.
