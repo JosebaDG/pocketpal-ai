@@ -1,3 +1,4 @@
+import {noteDraftId} from '../../../features/coach/CoachNoteDraft';
 import {CoachCourseRepository} from '../../../features/coach/CoachCourseRepository';
 import type {CoachCourseStorage} from '../../../features/coach/CoachCourseRepository';
 import {parseCoachRoster} from '../../../features/coach/CoachRoster';
@@ -228,6 +229,31 @@ describe('coach_course: drafts', () => {
     expect(monday.data.sessionDate).toBe(MON);
     expect(monday.data.sessionDateSource).toBe('last_occurrence');
     expect(monday.data.participantId).toBeNull();
+  });
+
+  it('gives each draft the id the repository will use, so repeats are one note', async () => {
+    const {engineAt, run} = await setup();
+    const engine = engineAt(at(17, 10));
+    const args = {
+      action: 'draft_note',
+      kind: 'student',
+      groupId: 'w1',
+      participantId: 'p1',
+      text: 'Se agarró al borde',
+    };
+    const first = await run(engine, args);
+    const again = await run(engine, {...args, text: ' Se agarró  al borde '});
+    expect(first.data.draftId).toMatch(/^draft-/);
+    expect(again.data.draftId).toBe(first.data.draftId);
+    expect(first.data.draftId).toBe(
+      noteDraftId({
+        kind: 'student',
+        groupId: 'w1',
+        participantId: 'p1',
+        sessionDate: WED,
+        text: 'Se agarró al borde',
+      }),
+    );
   });
 
   it('rejects drafts that would attribute a note wrongly', async () => {

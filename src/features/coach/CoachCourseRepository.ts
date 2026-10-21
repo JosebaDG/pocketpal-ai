@@ -1,5 +1,7 @@
 import {z} from 'zod';
 
+import {noteDraftId, normaliseNoteText} from './CoachNoteDraft';
+import type {NoteDraft} from './CoachNoteDraft';
 import {parseCoachRoster} from './CoachRoster';
 import type {CoachRoster} from './CoachRoster';
 import {GROUP_LEVELS, dateWeekdayIndex, weekdayIndex} from './CoachSchedule';
@@ -80,6 +82,13 @@ export type CourseSnapshot = Omit<z.infer<typeof snapshotSchema>, 'roster'> & {
 };
 
 /** Trusted storage port. Production needs a protected, transactional adapter. */
+export type NoteConfirmation = {
+  snapshot: CourseSnapshot;
+  noteId: string;
+  /** false when the same draft had already been saved: nothing was written. */
+  created: boolean;
+};
+
 export interface CoachCourseStorage {
   read(scope: CourseScope): Promise<string | null>;
   write(scope: CourseScope, snapshot: string): Promise<void>;
@@ -258,7 +267,90 @@ export class CoachCourseRepository {
   }
 
   /**
-   * Confirmation is the UI's responsibility, not a model-supplied boolean.
+   * Saves a reviewed draft exactly once. The note id comes from the draft's
+   * content (see noteDraftId), so a second confirmation of the same draft
+   * (double tap, retry, repeated tool call) returns the saved note without
+   * writing or bumping the revision. Use this from every confirmation path.
+   */
+  async confirmNoteDraft(
+    draft: NoteDraft,
+    at: string,
+  ): Promise<NoteConfirmation> {
+    const noteId = noteDraftId(draft);
+    return this.serial(async () => {
+      const data = await this.load();
+      const notes: Array<{
+        id: string;
+        groupId: string;
+        text: string;
+        sessionDate?: string;
+        participantId?: string;
+      }> = draft.kind === 'student' ? data.studentNotes : data.groupNotes;
+      const existing = notes.find(note => note.id === noteId);
+      if (existing) {
+        const same =
+          existing.groupId === draft.groupId &&
+          existing.sessionDate === draft.sessionDate &&
+          normaliseNoteText(existing.text) === normaliseNoteText(draft.text) &&
+          (draft.kind === 'group' ||
+            existing.participantId === draft.participantId);
+        if (!same) {
+          throw new Error('Draft id collision: review the note');
+        }
+        return {snapshot: data, noteId, created: false};
+      }
+      if (
+        [...data.studentNotes, ...data.groupNotes].some(
+          note => note.id === noteId,
+        )
+      ) {
+        throw new Error('Draft id collision: review the note');
+      }
+      data.revision += 1;
+      const text = draft.text.trim();
+      if (draft.kind === 'student') {
+        const person = data.roster.participants.find(
+          item =>
+            item.id === draft.participantId &&
+            item.groupId === draft.groupId &&
+            item.status === 'enrolled',
+        );
+        if (!person) {
+          throw new Error('Participant not enrolled in selected group');
+        }
+        data.studentNotes.push(
+          studentNoteSchema.parse({
+            id: noteId,
+            participantId: draft.participantId,
+            groupId: draft.groupId,
+            text,
+            at,
+            sessionDate: draft.sessionDate,
+          }),
+        );
+      } else {
+        if (!data.roster.groups.some(group => group.id === draft.groupId)) {
+          throw new Error('Unknown group');
+        }
+        data.groupNotes.push(
+          groupNoteSchema.parse({
+            id: noteId,
+            groupId: draft.groupId,
+            text,
+            at,
+            sessionDate: draft.sessionDate,
+          }),
+        );
+      }
+      const validated = validateSnapshot(data, this.scope);
+      await this.storage.write({...this.scope}, JSON.stringify(validated));
+      return {snapshot: validated, noteId, created: true};
+    });
+  }
+
+  /**
+   * Low-level append: every call adds a new note, so a repeated confirmation
+   * duplicates it. Screens and tools must use confirmNoteDraft instead.
    * sessionDate (YYYY-MM-DD) says which class the note is about; it may differ
    * from the moment of writing when notes are taken after a block of sessions.
    */

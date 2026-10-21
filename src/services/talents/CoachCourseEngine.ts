@@ -15,6 +15,10 @@ import {
   weekdayIndex,
 } from '../../features/coach/CoachSchedule';
 import type {SessionSlot} from '../../features/coach/CoachSchedule';
+import {
+  lastSessionDate,
+  noteDraftId,
+} from '../../features/coach/CoachNoteDraft';
 import {defaultCoachCourseAccess} from '../../features/coach/coachCourseAccess';
 import type {CoachCourseAccess} from '../../features/coach/coachCourseAccess';
 import type {TalentEngine, TalentResult, ToolDefinition} from './types';
@@ -60,17 +64,6 @@ function validDate(value: string): boolean {
   );
 }
 
-function lastOccurrence(today: string, weekday: number): string {
-  const base = Date.parse(`${today}T00:00:00Z`);
-  for (let back = 0; back < 7; back += 1) {
-    const day = new Date(base - back * 86400000).toISOString().slice(0, 10);
-    if (dateWeekdayIndex(day) === weekday) {
-      return day;
-    }
-  }
-  return today;
-}
-
 function resolveSessionDate(
   group: {weekday: string},
   given: unknown,
@@ -89,7 +82,7 @@ function resolveSessionDate(
   if (index === -1) {
     return {sessionDate: today, source: 'today'};
   }
-  const sessionDate = lastOccurrence(today, index);
+  const sessionDate = lastSessionDate(group.weekday, today);
   return {
     sessionDate,
     source: sessionDate === today ? 'today' : 'last_occurrence',
@@ -279,9 +272,21 @@ function draftNote(snap: CourseSnapshot, now: Date, args: Record<string, any>) {
       throw new Error('Participant not enrolled in the selected group');
     }
   }
+  const draftId = noteDraftId(
+    participant
+      ? {
+          kind: 'student',
+          groupId: group.id,
+          participantId: participant.id,
+          sessionDate,
+          text,
+        }
+      : {kind: 'group', groupId: group.id, sessionDate, text},
+  );
   return {
     status: 'DRAFT_NOT_SAVED',
     needsHumanConfirmation: true,
+    draftId,
     kind,
     groupId: group.id,
     participantId: participant?.id ?? null,

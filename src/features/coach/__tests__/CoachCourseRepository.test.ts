@@ -150,3 +150,95 @@ describe('scoped course repository', () => {
     await expect(repo.snapshot()).rejects.toThrow('Course scope mismatch');
   });
 });
+
+// Bug from the 2026-10-20 review: confirming the same note twice saved it twice.
+describe('idempotent note confirmation', () => {
+  const draft = {
+    kind: 'student' as const,
+    groupId: 'a',
+    participantId: 'p1',
+    sessionDate: '2026-09-28',
+    text: 'Mejora el batido de piernas',
+  };
+
+  it('saves a confirmed draft once even if it is confirmed twice', async () => {
+    const {storage} = memoryStorage();
+    const repo = new CoachCourseRepository(scope, storage);
+    await repo.createConfirmed(roster());
+    const first = await repo.confirmNoteDraft(draft, at);
+    const second = await repo.confirmNoteDraft(draft, '2026-09-30T10:00:05Z');
+    expect(first.created).toBe(true);
+    expect(second.created).toBe(false);
+    expect(second.noteId).toBe(first.noteId);
+    expect(second.snapshot.revision).toBe(first.snapshot.revision);
+    expect(second.snapshot.studentNotes).toHaveLength(1);
+    expect(storage.write).toHaveBeenCalledTimes(2); // import + first save
+  });
+
+  it('keeps one note when two confirmations race (double tap)', async () => {
+    const {storage} = memoryStorage();
+    const repo = new CoachCourseRepository(scope, storage);
+    await repo.createConfirmed(roster());
+    const results = await Promise.all([
+      repo.confirmNoteDraft(draft, at),
+      repo.confirmNoteDraft(draft, at),
+    ]);
+    expect(results.map(r => r.created).sort()).toEqual([false, true]);
+    expect((await repo.snapshot()).studentNotes).toHaveLength(1);
+  });
+
+  it('treats spacing differences from dictation as the same note', async () => {
+    const {storage} = memoryStorage();
+    const repo = new CoachCourseRepository(scope, storage);
+    await repo.createConfirmed(roster());
+    await repo.confirmNoteDraft(draft, at);
+    const again = await repo.confirmNoteDraft(
+      {...draft, text: '  Mejora el  batido de piernas \n'},
+      at,
+    );
+    expect(again.created).toBe(false);
+    expect((await repo.snapshot()).studentNotes).toHaveLength(1);
+  });
+
+  it('survives reopening: the same draft is still recognised', async () => {
+    const {storage} = memoryStorage();
+    await new CoachCourseRepository(scope, storage).createConfirmed(roster());
+    await new CoachCourseRepository(scope, storage).confirmNoteDraft(draft, at);
+    const reopened = new CoachCourseRepository(scope, storage);
+    expect((await reopened.confirmNoteDraft(draft, at)).created).toBe(false);
+    expect((await reopened.snapshot()).studentNotes).toHaveLength(1);
+  });
+
+  it('saves different text, student, day or kind as separate notes', async () => {
+    const {storage} = memoryStorage();
+    const repo = new CoachCourseRepository(scope, storage);
+    await repo.createConfirmed(roster());
+    await repo.confirmNoteDraft(draft, at);
+    await repo.confirmNoteDraft({...draft, text: 'Otra observación'}, at);
+    await repo.confirmNoteDraft({...draft, sessionDate: '2026-09-21'}, at);
+    const data = await repo.confirmNoteDraft(
+      {
+        kind: 'group',
+        groupId: 'a',
+        sessionDate: '2026-09-28',
+        text: draft.text,
+      },
+      at,
+    );
+    expect(data.snapshot.studentNotes).toHaveLength(3);
+    expect(data.snapshot.groupNotes).toHaveLength(1);
+  });
+
+  it('still refuses notes for students not enrolled in the group', async () => {
+    const {storage} = memoryStorage();
+    const repo = new CoachCourseRepository(scope, storage);
+    await repo.createConfirmed(roster());
+    await expect(
+      repo.confirmNoteDraft({...draft, participantId: 'p2'}, at),
+    ).rejects.toThrow('Participant not enrolled in selected group');
+    await expect(
+      repo.confirmNoteDraft({...draft, sessionDate: '2026-09-29'}, at),
+    ).rejects.toThrow('Session date does not match the group weekday');
+    expect((await repo.snapshot()).studentNotes).toHaveLength(0);
+  });
+});
