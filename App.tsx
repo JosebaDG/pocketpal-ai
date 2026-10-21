@@ -37,6 +37,7 @@ import {MarkdownProvider} from './src/components/MarkdownView';
 import {AutomationBridge, BenchmarkRunnerScreen} from './src/__automation__';
 import {
   ChatScreen,
+  CoachScreen,
   ModelsScreen,
   SettingsScreen,
   BenchmarkScreen,
@@ -141,6 +142,14 @@ const App = observer(() => {
                               headerRight: () => <PalHeaderRight />,
                               headerStyle: styles.headerWithoutDivider,
                               title: currentL10n.screenTitles.pals,
+                            }}
+                          />
+                          <Drawer.Screen
+                            name={ROUTES.COACH}
+                            component={gestureHandlerRootHOC(CoachScreen)}
+                            options={{
+                              headerStyle: styles.headerWithoutDivider,
+                              title: 'Coach (prueba)',
                             }}
                           />
                           <Drawer.Screen
