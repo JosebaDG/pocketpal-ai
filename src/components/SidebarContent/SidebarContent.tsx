@@ -552,6 +552,13 @@ export const SidebarContent: React.FC<DrawerContentComponentProps> = observer(
               testID="drawer-item-pals"
             />
             <Drawer.Item
+              label="Coach (prueba)"
+              icon={() => <EditIcon stroke={theme.colors.primary} />}
+              onPress={() => props.navigation.navigate(ROUTES.COACH)}
+              style={styles.menuDrawerItem}
+              testID="drawer-item-coach"
+            />
+            <Drawer.Item
               label={l10n.components.sidebarContent.menuItems.models}
               icon={() => <ModelIcon stroke={theme.colors.primary} />}
               onPress={() => props.navigation.navigate(ROUTES.MODELS)}

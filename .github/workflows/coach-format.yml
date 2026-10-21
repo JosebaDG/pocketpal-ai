@@ -1,0 +1,63 @@
+name: Coach Format and Verify
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coach-format-feature-swim-agent-mvp
+  cancel-in-progress: false
+
+jobs:
+  format-and-verify:
+    if: github.repository == 'JosebaDG/pocketpal-ai' && github.event.pull_request.number == 1 && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'feature/swim-agent-mvp'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/swim-agent-mvp
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+      - name: Install locked dependencies
+        id: install
+        run: yarn install --frozen-lockfile
+      - name: Format only our sources
+        id: format
+        shell: bash
+        run: |
+          files=(
+            src/features/coach/CoachRoster.ts
+            src/features/coach/__tests__/CoachRoster.test.ts
+            src/features/coach/__tests__/CoachRosterStateless.test.ts
+            src/services/talents/SwimAgentEngine.ts
+            src/services/talents/CoachWorkspaceEngine.ts
+            src/services/talents/coachFileAccess.ts
+            src/services/talents/__tests__/SwimAgentEngine.test.ts
+            src/services/talents/__tests__/CoachWorkspaceEngine.test.ts
+          )
+          yarn prettier --write "${files[@]}"
+          git add -- "${files[@]}"
+          if ! git diff --cached --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m 'style: format coach sources with project prettier'
+            git push origin HEAD:refs/heads/feature/swim-agent-mvp
+          fi
+      # GITHUB_TOKEN pushes do not launch another workflow: verify here too.
+      - name: Lint coach sources
+        if: ${{ !cancelled() && steps.format.outcome == 'success' }}
+        run: yarn eslint src/features/coach src/services/talents/SwimAgentEngine.ts src/services/talents/CoachWorkspaceEngine.ts src/services/talents/coachFileAccess.ts src/services/talents/__tests__/SwimAgentEngine.test.ts src/services/talents/__tests__/CoachWorkspaceEngine.test.ts
+      - name: TypeScript type check
+        if: ${{ !cancelled() && steps.format.outcome == 'success' }}
+        run: yarn typecheck
+      - name: Coach tests
+        if: ${{ !cancelled() && steps.format.outcome == 'success' }}
+        run: yarn test --coverage=false --runInBand --runTestsByPath src/features/coach/__tests__/CoachRoster.test.ts src/features/coach/__tests__/CoachRosterStateless.test.ts src/services/talents/__tests__/SwimAgentEngine.test.ts src/services/talents/__tests__/CoachWorkspaceEngine.test.ts

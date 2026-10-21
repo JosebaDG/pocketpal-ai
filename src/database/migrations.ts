@@ -3,6 +3,7 @@ import {
   createTable,
   addColumns,
 } from '@nozbe/watermelondb/Schema/migrations';
+import {coachCourseDefinition} from './coachCourseDefinition';
 
 export default schemaMigrations({
   migrations: [
@@ -152,6 +153,11 @@ export default schemaMigrations({
           columns: [{name: 'pinned', type: 'boolean'}],
         }),
       ],
+    },
+    // Fork migration: reconcile version numbers before adopting upstream folders.
+    {
+      toVersion: 9,
+      steps: [createTable(coachCourseDefinition)],
     },
   ],
 });

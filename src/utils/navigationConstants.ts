@@ -7,6 +7,8 @@ export const ROUTES = {
   BENCHMARK: 'Benchmark',
   SETTINGS: 'Settings',
   APP_INFO: 'App Info',
+  // Fork-only MVP 1: coach notes with a fictitious course.
+  COACH: 'Coach',
 
   // Dev tools route. Only available in debug mode.
   DEV_TOOLS: 'Dev Tools',

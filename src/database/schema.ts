@@ -1,8 +1,10 @@
 import {appSchema, tableSchema} from '@nozbe/watermelondb';
+import {coachCourseDefinition} from './coachCourseDefinition';
 
 export default appSchema({
-  version: 8,
+  version: 9,
   tables: [
+    tableSchema(coachCourseDefinition),
     tableSchema({
       name: 'chat_sessions',
       columns: [

@@ -1,0 +1,45 @@
+name: Coach Workspace Checks
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  typecheck-and-focused-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node_modules-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-node_modules-
+
+      - name: Install dependencies
+        id: install
+        run: yarn install --frozen-lockfile
+
+      - name: TypeScript type check
+        id: types
+        run: yarn typecheck
+
+      # Focused diagnostic only: the full upstream coverage gate is unchanged.
+      - name: Coach roster tests
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: yarn test --coverage=false --runInBand --runTestsByPath src/features/coach/__tests__/CoachRoster.test.ts src/features/coach/__tests__/CoachRosterStateless.test.ts
+
+      - name: Coach Talent tests
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: yarn test --coverage=false --runInBand --runTestsByPath src/services/talents/__tests__/SwimAgentEngine.test.ts src/services/talents/__tests__/CoachWorkspaceEngine.test.ts
