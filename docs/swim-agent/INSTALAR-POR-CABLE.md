@@ -6,6 +6,8 @@ Solo datos ficticios. No cargues listados reales de niños hasta decidir cifrado
 
 Estado a 21/10/2026: las pruebas, el lint y el typecheck pasan en Linux. La app no se ha compilado nunca para iOS, porque en Linux no se puede. La primera compilación real es la tuya.
 
+Desde el 25/10/2026 el proyecto viene con firma automática y sin equipo ni perfiles ajenos (Debug, Release y Profiling): en Xcode solo eliges tu equipo y un bundle id. Tampoco está probado en un Mac.
+
 ## Antes de empezar: qué tienes
 
 Abre la app **Terminal** del Mac y escribe cada orden, una por línea, pulsando Intro.
@@ -24,7 +26,7 @@ Abre la app **Terminal** del Mac y escribe cada orden, una por línea, pulsando 
 6. `corepack prepare yarn@1.22.22 --activate`
 7. `yarn -v` → tiene que salir 1.22.x.
 8. `brew install cocoapods`
-9. `pod --version` → 1.15.2 o más (1.16 vale).
+9. `pod --version` → 1.15.2 o más (1.16 y 1.17 valen).
 10. `xcode-select -p` → tiene que acabar en `Xcode.app/Contents/Developer`. Si no: `sudo xcode-select -s /Applications/Xcode.app`.
 
 ## 2. Bajar la rama
@@ -51,9 +53,10 @@ Todo desde la carpeta del repo.
 1. `bash scripts/coach-ios-local-setup.sh` → crea cuatro archivos locales con valores de relleno (los mismos que usa la CI). No llevan secretos y git los ignora.
 2. `yarn install` → tarda unos minutos.
 3. `cd ios`
-4. `pod install` → la primera vez puede tardar 10 o 15 minutos.
+4. `pod install` → la primera vez puede tardar 10 o 15 minutos. Si tu CocoaPods es más nuevo, cambiará la línea `COCOAPODS:` del final de `ios/Podfile.lock`: no es un fallo y no hace falta guardarlo.
 5. `cd ..`
 6. `open ios/PocketPal.xcworkspace` → abre el **.xcworkspace**, nunca el .xcodeproj.
+7. Si Xcode ofrece **Update to recommended settings** (un aviso amarillo a la izquierda), pulsa que no o déjalo sin tocar. Si lo aceptas, activa User Script Sandboxing y rompe los scripts de React Native («Sandbox: rsync … deny»).
 
 ## 4. Firma en Xcode
 
@@ -61,11 +64,12 @@ Todo desde la carpeta del repo.
 2. En la columna izquierda, pulsa el icono azul **PocketPal** de arriba del todo.
 3. En **TARGETS**, elige **PocketPal** (no PocketPalTests).
 4. Pestaña **Signing & Capabilities**, subpestaña **All**.
-5. Marca **Automatically manage signing**.
+5. Comprueba que está marcado **Automatically manage signing** (ya viene así).
 6. En **Team**, elige tu equipo.
 7. En **Bundle Identifier**, cambia `ai.pocketpal` por uno tuyo, por ejemplo `com.josebadg.pocketpalcoach`. El original es del equipo de PocketPal y no te dejará usarlo.
 8. Si tu equipo pone «(Personal Team)», borra con la papelera la capacidad **Siri** (y las de memoria si Xcode se queja). Con la cuenta de pago no hace falta.
 9. Espera a que desaparezcan los avisos rojos de esa pantalla.
+10. Plan B, solo si después de elegir tu equipo Xcode sigue enseñando un equipo que no es el tuyo, o sale «conflicting provisioning settings»: pestaña **Build Settings**, arriba **All** y **Combined**, y busca por turnos **Development Team**, **Provisioning Profile** y **Code Signing Identity**. Despliega cada una con el triángulo y, si debajo hay una fila **Any iOS SDK**, selecciónala y pulsa la tecla de borrar. Hazlo en Debug, Release y Profiling. Luego vuelve a Signing & Capabilities y elige tu equipo otra vez.
 
 ## 5. Preparar el iPhone
 
@@ -90,9 +94,8 @@ En Debug la app pide el código JavaScript al Mac por la wifi.
 Para llevarla a la piscina sin Metro ni wifi:
 
 1. Xcode → **Product → Scheme → Edit Scheme…** → **Run** → **Build Configuration: Release** → Close.
-2. Target PocketPal → **Build Settings** → busca **Code Signing Identity** → en Release pon **Apple Development**.
-3. **Product → Run**.
-4. Con un Apple ID gratis la app deja de abrirse a los 7 días: vuelve a pulsar Run. Con la cuenta de pago dura un año.
+2. **Product → Run**. Release ya firma con Apple Development: no hay que tocar Code Signing Identity.
+3. Con un Apple ID gratis la app deja de abrirse a los 7 días: vuelve a pulsar Run. Con la cuenta de pago dura un año.
 
 ## 8. Comprobar el ciclo en el móvil
 
@@ -125,13 +128,14 @@ Si los pasos 9, 10 y 12 salen bien, el ciclo del MVP 1 está cerrado en tu iPhon
 | `'React/RCTBridge.h' file not found` o «No such module» | Abriste el .xcodeproj: cierra y abre el .xcworkspace |
 | «Failed to register bundle identifier» | Cambia el Bundle Identifier por otro único |
 | «Personal development teams … do not support the Siri capability» | Borra la capacidad Siri (paso 4.8) |
-| «Conflicting provisioning settings … iPhone Distribution» | Code Signing Identity → Apple Development (paso 7.2) |
+| «Signing for "PocketPal" requires a development team» | Elige tu equipo (paso 4.6) |
+| «Conflicting provisioning settings» o sale un equipo que no es el tuyo | Paso 4.10 |
 | «Developer Mode disabled» | Paso 5.4 |
 | Xcode no ofrece el iPhone o dice que no soporta iOS 27 | Actualiza a Xcode 27, o Xcode → Settings → Components → instala iOS 27 |
 | «Untrusted Developer» al abrir | Paso 6.4 |
 | Pantalla roja «No bundle URL present» o «Could not connect to development server» | `yarn start` abierto y misma wifi, o usa Release (paso 7) |
 | «Command PhaseScriptExecution failed» en «Bundle React Native code and images» | Mira el primer error rojo de ese paso; suele ser node (`ios/.xcode.env.local`) o falta `.env` |
-| «Sandbox: rsync … deny» | Build Settings → User Script Sandboxing → No |
+| «Sandbox: rsync … deny» | Build Settings → User Script Sandboxing → No (pasa si se aceptó «Update to recommended settings», paso 3.7) |
 | Errores de C++ dentro de Pods (fmt, folly, Yoga…) | Puede ser React Native 0.82 con Xcode 27: copia el primer error rojo completo y pásamelo |
 
 Si Xcode da un error que no está aquí, copia el **primer** mensaje rojo completo (no el último) y pásalo.
